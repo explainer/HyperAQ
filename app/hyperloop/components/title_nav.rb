@@ -11,7 +11,7 @@ class TitleNav < Hyperloop::Component
   end
 
   def advertisement
-    "HyperAQ: Aquarius Sprinkler System, with Hyperloop UI, #{WaterManager.scheduler} scheduling, now with tooltips!"
+    "Aquarius Sprinkler System, with Hyperloop UI, #{WaterManager.scheduler} scheduling, now with tooltips!"
   end
 
 end

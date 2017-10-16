@@ -26,7 +26,7 @@ class SprinkleRow < Hyperloop::Component
     end
   end
 
-  # change color as sprinkle state changes
+  # change color as sprinkle state changes, using bootstrap classes
   def markup
     #   IDLE    ACTIVE NEXT
     %w{ default info   danger }[params.sprinkle.state]

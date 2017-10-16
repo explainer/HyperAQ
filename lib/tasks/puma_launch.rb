@@ -34,6 +34,8 @@ DAEMON_ALIASES = { 't' => 'true', 'f'=> 'false'}
 class PumaOptions
   attr_accessor :library, :environment, :port, :daemon, :pidfile
 
+  Version = '0.10.0'
+
   def initialize
     self.library = []
     #
@@ -43,10 +45,6 @@ class PumaOptions
     self.port = 2017
     self.daemon = true
     self.pidfile = nil
-  end
-
-  def rails_root
-    Dir.pwd
   end
 
   def define_options(parser)
@@ -117,7 +115,41 @@ class PumaOptions
 end # class PumaOptions
 
 class PumaLaunch
-  Version = '0.1.0'
+  def initialize
+    # log "location --> #{Dir.pwd}\n"
+    @location = Dir.pwd
+  end
+
+  LOGFILE = "log/puma_launch.log"
+  # LOG_TIME = "%H:%M:%S"
+
+  # def log_time
+  #   Time.now.strftime(LOG_TIME)
+  # end
+
+  def log(msg)
+    f = File.open(LOGFILE, 'a')
+    f.write msg
+    # f.write "#{log_time} #{msg}"
+    f.close
+  end
+
+  def location
+    # log "location --> #{@location}\n"
+    @location
+  end
+
+  def valid_location
+    if File.exist?("#{location}/Gemfile")
+      if !Dir.exist?("#{location}/tmp/pids")
+        Dir.mkdir("#{location}/tmp/pids")
+      end
+      answer = true
+    else
+      answer = false
+    end
+    answer
+  end
 
   #
   # Return a class describing the options.
@@ -198,32 +230,10 @@ class PumaLaunch
   end
 end  # class PumaLaunch
 
-class VerifyEnvironment
-  def initialize
-    @location = Dir.pwd
-  end
-
-  def location
-    @location
-  end
-
-  def valid_location
-    if File.exist?("#{location}/Gemfile")
-      if !Dir.exist?("#{location}/pids")
-        Dir.mkdir('pids')
-      end
-      answer = true
-    else
-      answer = false
-    end
-    answer
-  end
-end # class VerifyEnvironment
-
 # Main program
 
-if VerifyEnvironment.new.valid_location
-  launcher = PumaLaunch.new
+launcher = PumaLaunch.new
+if launcher.valid_location
   options = launcher.parse(ARGV)
   pp launcher.script
   exec(launcher.script)

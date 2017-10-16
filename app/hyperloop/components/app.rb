@@ -2,6 +2,7 @@
   class App < Hyperloop::Component
 
     # The top of the component tree.
+    # All components are free to use the Bootstrap styling library, installed as a CDN in app/views/layouts/application.html.erb
 
     def render
       UL do
