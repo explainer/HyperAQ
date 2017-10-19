@@ -123,7 +123,7 @@ class Sprinkle < ApplicationRecord
 
     def move_to_next_start_time
       Sprinkle.where("start_time < ?", Time.now).each do |sprinkle|
-        sprinkle.update(start_time: sprinkle.start_time + SECONDS_PER_WEEK)
+        sprinkle.update(start_time: sprinkle.start_time + SECONDS_PER_WEEK, state: IDLE)
       end
     end
 

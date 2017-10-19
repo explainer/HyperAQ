@@ -5,12 +5,15 @@ class PorterStatus < Hyperloop::Component
     # access the request.port out of the http request and stash it into Porter.first.port_number.
     # That same method will grab the `hostname` from the underlying OS and stash it
     # into Porter.first.host_name
-    HTTP.get("/porters/1", dataType: "json").then do |response|
-      # We don't care about the response, but the Porter.first object is now set up.
-      # puts "**************"
-      # puts response.json[:body]
-      # puts "**************"
-    end
+    # while Porter.first.host_with_port == "not-yet-loaded:9999"
+      HTTP.get("/porters/1", dataType: "json").then do |response|
+        # We don't care about the response, but the Porter.first object is now set up.
+        puts "**************"
+        puts response.json[:body]
+        puts "**************"
+      end
+      sleep(1)
+    # end
   end
 
   def render

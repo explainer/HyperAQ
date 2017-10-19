@@ -1,3 +1,99 @@
+class Service
+  def start
+  end
+
+  def stop
+  end
+
+  LOGFILE = "log/service.log"
+
+  def log(msg)
+    f = File.open(LOGFILE, 'a')
+    f.write msg
+    f.close
+  end
+end
+
+class MinuteHandService < Service
+  def start
+    log "Starting minute hand daemon\n"
+    spawnee = "ruby #{actuator_path} #{scale_factor} #{Porter.first.localhost_with_port} #{WaterManager.first.key} #{File.realdirpath('lib/tasks/minute_hand_actuator.sh')}"
+    log "spawn #{spawnee}\n"
+    pid = Process.spawn(spawnee)
+    f = File.open(pid_file_name, 'w')
+    f.write pid.to_s
+    log "pid file --> #{pid_file_name}, pid --> #{pid}\n"
+    f.close
+  end
+
+  def stop
+    log "Stopping minute hand daemon\n"
+    lines = File.readlines(pid_file_name)
+    system("rm #{pid_file_name}")
+    pid = lines[0].to_i
+    system("kill -KILL #{pid}")
+    log "kill pid #{pid}\n"
+  end
+
+  private
+    def actuator_path
+      File.realdirpath('lib/tasks/minute_hand_daemon.rb')
+    end
+
+    def scale_factor
+      1
+    end
+
+    def pid_file_name
+      'tmp/pids/minute_hand_daemon.pid'
+    end
+end
+
+class CrontabService < Service
+  # Sprinkle states
+  IDLE = 0
+  ACTIVE = 1
+  NEXT = 2
+
+  def start
+    # HTTP_HOST=$3          localhost:nnnn
+    # SPRINKLE_ID=$1        s.id
+    # STATE=$2,             s.state
+  
+    # create a working crontab file
+    # log "Building crontab\n"
+    f = File.open(crontab_file, 'w')
+    f.write "MAIL='keburgett@gmail.com'\n"
+    # for each sprinkle, write a crontab entry for ON and OFF times.
+    p = Porter.first.localhost_with_port # provides host:port combination
+    sprinkle_agent_id = 99 # fUture update to use daemon, for now just a placeholder
+    Sprinkle.all.each do |s|
+      [ACTIVE, IDLE].each do |state| # Note that valve states and sprinkles states SHARE the same numeric values
+        crontab_line =  "#{s.to_crontab_time(state)} sh #{s.actuator_path} #{p} #{s.to_crontab_attributes(state)}\n" 
+        f.write crontab_line
+        log "#{crontab_line}\n"
+      end
+    end
+    f.close
+    system("crontab #{crontab_file}")
+    log "crontab deployed\n"
+    # Mark the first Sprinkle NEXT
+    Sprinkle.first.update(state: NEXT)
+  end
+
+  def stop
+    log "Removing crontab\n"
+    system("crontab -r")
+    system("touch lib/assets/crontab")
+    system("rm lib/assets/crontab")
+  end  
+
+  private
+    def crontab_file
+      'lib/assets/crontab'
+    end
+end
+
 class WaterManagerServer < Hyperloop::ServerOp
   param :acting_user, nils: true
   param :wm_id #, type: Number
@@ -11,7 +107,7 @@ class WaterManagerServer < Hyperloop::ServerOp
   WM_ACTIVE =  1
   WM_STANDBY = 0
 
-  states = %w{ Standby Active }
+  # states = %w{ Standby Active }
 
   # Valve command values
   OFF = 0
@@ -26,7 +122,7 @@ class WaterManagerServer < Hyperloop::ServerOp
   CRONTAB_SPRINKLE_ALL  = 0
   DAEMON_MINUTE_HAND  = 1
 
-  CRONTAB = 'lib/assets/crontab'
+  # CRONTAB = 'lib/assets/crontab'
 
   TIME_INPUT_STRFTIME = "%a %d %b %l:%M %P"
 
@@ -61,22 +157,28 @@ class WaterManagerServer < Hyperloop::ServerOp
     log "Set up scheduling option: #{scheduling_options}\n"
     case WaterManager.first.scheduling_option
     when CRONTAB_SPRINKLE_ALL
-      install_crontab
+      # install_crontab
+      CrontabService.new.start
     when DAEMON_MINUTE_HAND
-      install_minute_hand_daemon
+      # install_minute_hand_daemon
+      MinuteHandService.new.start
     end
+    # Mark the first Sprinkle NEXT
+    Sprinkle.first.update(state: NEXT)
   end
 
   def disarm
     log "Shut down scheduling option: #{scheduling_options}\n"
     case WaterManager.first.scheduling_option
     when CRONTAB_SPRINKLE_ALL
-      remove_crontab
+      # remove_crontab
+      CrontabService.new.stop
     when DAEMON_MINUTE_HAND
-      remove_minute_hand_daemon
+      # remove_minute_hand_daemon
+      MinuteHandService.new.stop
     end
 
-    remove_crontab
+    # close all valves
     Valve.all.each do |v|
       # close only those valves that are open.
       if v.cmd == ON
@@ -85,62 +187,62 @@ class WaterManagerServer < Hyperloop::ServerOp
     end
   end
 
-  # HTTP_HOST=$3          localhost:nnnn
-  # SPRINKLE_ID=$1        s.id
-  # STATE=$2,             s.state
-  def install_crontab
-    # create a working crontab file
-    # log "Building crontab\n"
-    f = File.open(CRONTAB, 'w')
-    f.write "MAIL='keburgett@gmail.com'\n"
-    # for each sprinkle, write a crontab entry for ON and OFF times.
-    p = Porter.first.localhost_with_port # provides host:port combination
-    sprinkle_agent_id = 99 # fUture update to use daemon, for now just a placeholder
-    Sprinkle.all.each do |s|
-      [ACTIVE, IDLE].each do |state| # Note that valve states and sprinkles states SHARE the same numeric values
-        crontab_line =  "#{s.to_crontab_time(state)} sh #{s.actuator_path} #{p} #{s.to_crontab_attributes(state)}\n" 
-        f.write crontab_line
-        log "#{crontab_line}\n"
-      end
-    end
-    f.close
-    system("crontab #{CRONTAB}")
-    log "crontab deployed\n"
-    # Mark the first Sprinkle NEXT
-    Sprinkle.first.update(state: NEXT)
-  end
+  # # HTTP_HOST=$3          localhost:nnnn
+  # # SPRINKLE_ID=$1        s.id
+  # # STATE=$2,             s.state
+  # def install_crontab
+  #   # create a working crontab file
+  #   # log "Building crontab\n"
+  #   f = File.open(CRONTAB, 'w')
+  #   f.write "MAIL='keburgett@gmail.com'\n"
+  #   # for each sprinkle, write a crontab entry for ON and OFF times.
+  #   p = Porter.first.localhost_with_port # provides host:port combination
+  #   sprinkle_agent_id = 99 # fUture update to use daemon, for now just a placeholder
+  #   Sprinkle.all.each do |s|
+  #     [ACTIVE, IDLE].each do |state| # Note that valve states and sprinkles states SHARE the same numeric values
+  #       crontab_line =  "#{s.to_crontab_time(state)} sh #{s.actuator_path} #{p} #{s.to_crontab_attributes(state)}\n" 
+  #       f.write crontab_line
+  #       log "#{crontab_line}\n"
+  #     end
+  #   end
+  #   f.close
+  #   system("crontab #{CRONTAB}")
+  #   log "crontab deployed\n"
+  #   # Mark the first Sprinkle NEXT
+  #   Sprinkle.first.update(state: NEXT)
+  # end
 
-  def remove_crontab
-    log "Removing crontab\n"
-    system("crontab -r")
-    system("touch lib/assets/crontab")
-    system("rm lib/assets/crontab")
-  end
+  # def remove_crontab
+  #   log "Removing crontab\n"
+  #   system("crontab -r")
+  #   system("touch lib/assets/crontab")
+  #   system("rm lib/assets/crontab")
+  # end
 
-  def actuator_path
-    File.realdirpath('lib/tasks/minute_hand_daemon.rb')
-  end
+  # def actuator_path
+  #   File.realdirpath('lib/tasks/minute_hand_daemon.rb')
+  # end
 
-  SCALE_FACTOR = 1
-  PID_FILE_NAME = 'tmp/pids/minute_hand_daemon.pid'
+  # SCALE_FACTOR = 1
+  # PID_FILE_NAME = 'tmp/pids/minute_hand_daemon.pid'
 
-  def install_minute_hand_daemon
-    spawnee = "ruby #{actuator_path} #{SCALE_FACTOR} #{Porter.first.localhost_with_port} #{WaterManager.first.key} #{File.realdirpath('lib/tasks/minute_hand_actuator.sh')}"
-    log "spawn #{spawnee}\n"
-    pid = Process.spawn(spawnee)
-    f = File.open(PID_FILE_NAME, 'w')
-    f.write pid.to_s
-    log "#{PID_FILE_NAME}, pid --> #{pid}\n"
-    f.close
-  end
+  # def install_minute_hand_daemon
+  #   spawnee = "ruby #{actuator_path} #{SCALE_FACTOR} #{Porter.first.localhost_with_port} #{WaterManager.first.key} #{File.realdirpath('lib/tasks/minute_hand_actuator.sh')}"
+  #   log "spawn #{spawnee}\n"
+  #   pid = Process.spawn(spawnee)
+  #   f = File.open(PID_FILE_NAME, 'w')
+  #   f.write pid.to_s
+  #   log "#{PID_FILE_NAME}, pid --> #{pid}\n"
+  #   f.close
+  # end
 
-  def remove_minute_hand_daemon
-    lines = File.readlines(PID_FILE_NAME)
-    system("rm #{PID_FILE_NAME}")
-    pid = lines[0].to_i
-    system("kill -KILL #{pid}")
-    log "kill pid #{pid}\n"
-  end
+  # def remove_minute_hand_daemon
+  #   lines = File.readlines(PID_FILE_NAME)
+  #   system("rm #{PID_FILE_NAME}")
+  #   pid = lines[0].to_i
+  #   system("kill -KILL #{pid}")
+  #   log "kill pid #{pid}\n"
+  # end
 
 end 
 

@@ -23,7 +23,7 @@ RANDOM = 32769
 TIME_INPUT_STRFTIME = "%a %d %b %l:%M %P"
 
 # create the top-level WaterManager.singleton
-WaterManager.create(state: WM_STANDBY, key: Random.rand(RANDOM), scheduling_option: CRONTAB_SPRINKLE_ALL)
+WaterManager.create(state: WM_STANDBY, key: Random.rand(RANDOM), scheduling_option: DAEMON_MINUTE_HAND)
 #
 # create a dummy MinuteHand record
 MinuteHand.create(key: nil)
