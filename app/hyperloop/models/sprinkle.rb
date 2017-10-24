@@ -3,7 +3,7 @@ require 'json'
 require 'models/application_record'
 
 class Sprinkle < ApplicationRecord
-  default_scope { order(start_time: :asc) }
+  default_scope { order(start_time: :asc) } # keep in sorted order, with the next sprinkle ready at the top
 
   belongs_to :valve
   
@@ -42,19 +42,19 @@ class Sprinkle < ApplicationRecord
     ACTIVE = 1
     NEXT = 2
 
-    # LOGFILE = "log/sprinkle.log"
-    # LOG_TIME = "%H:%M:%S "
+    LOGFILE = "log/sprinkle.log"
+    LOG_TIME = "%H:%M:%S"
 
-    # def log_time
-    #   Time.now.strftime(LOG_TIME)
-    # end
+    def log_time
+      Time.now.strftime(LOG_TIME)
+    end
 
-    # def log(msg)
-    #   f = File.open(LOGFILE, 'a')
-    #   f.write msg
-    #   f.write "#{log_time} #{msg}"
-    #   f.close
-    # end
+    def log(msg)
+      f = File.open(LOGFILE, 'a')
+      # f.write msg
+      f.write "#{log_time} #{msg}"
+      f.close
+    end
 
     #
     # business logic methods
@@ -80,11 +80,11 @@ class Sprinkle < ApplicationRecord
       # Parameters: {"state"=>"0", "id"=>"9", "sprinkle"=>{"state"=>"0"}}
       new_state = params['state'].to_i
       
-      # log "sprinkle.manipulate_and_update(params)\n"
-      # log "new_state --> #{states(new_state)}\n"
-      # log "id --> #{id}\n"
-      # log "sprinkle.state (old) --> #{states(state)}\n"
-      # log "sprinkle.state (new) --> #{states(new_state)}\n"
+      log "sprinkle.manipulate_and_update(params)\n"
+      log "new_state --> #{states(new_state)}\n"
+      log "id --> #{id}\n"
+      log "sprinkle.state (old) --> #{states(state)}\n"
+      log "sprinkle.state (new) --> #{states(new_state)}\n"
 
       if new_state == ACTIVE # start valve sequence
         start
@@ -96,7 +96,7 @@ class Sprinkle < ApplicationRecord
 
     def start
       update(state: ACTIVE)
-      # log "sprinkle.start #{valve.name}, #{state} #{states(state)}\n"
+      log "sprinkle.start #{valve.name}, #{states(state)}\n"
       if valve.cmd != ON
         valve.start
       end
@@ -105,12 +105,12 @@ class Sprinkle < ApplicationRecord
     def stop
       valve.stop      
       update(state: IDLE)
-      # log "sprinkle.stop #{valve.name}, #{state} #{states(state)}\n"
+      log "sprinkle.stop #{valve.name}, #{states(state)}\n"
       move_to_next_start_time
       #update(start_time: next_start_time)
       mark_next
       # Finally, prune any History(List) entries older than the PRUNE_INTERVAL
-      # List.prune  Ok   
+      List.prune  # Ok   
     end
 
     def minute_hand_start

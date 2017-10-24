@@ -1,14 +1,20 @@
 require 'models/application_record'
 class List < ApplicationRecord # Treat this as History, since Opal inflection problems broke with 'History', but work with 'List'
 
-  default_scope { order(start_time: :desc) }
+  default_scope { order(start_time: :desc) } # keep in sorted order, with the last created List at the top.
   belongs_to :valve
 
   LOGFILE = "log/history.log"
+  LOG_TIME = "%H:%M:%S "
+
+  def log_time
+    Time.now.strftime(LOG_TIME)
+  end
 
   def log(msg)
     f = File.open(LOGFILE, 'a')
-    f.write msg
+    # f.write msg
+    f.write "#{log_time} #{msg}"
     f.close
   end
 
@@ -21,7 +27,7 @@ class List < ApplicationRecord # Treat this as History, since Opal inflection pr
   # Create an instance of History, using valve_id of the owning valve_id as initialization parameter
   def start(valve_id)
     valve = Valve.find(valve_id)
-    log "\nhistory.start, #{valve.name}\n"
+    log "history.start: #{valve.name}, "
     update(start_time: Time.now, valve_id: valve_id)
     valve.update(active_history_id: id)
   end
@@ -29,14 +35,21 @@ class List < ApplicationRecord # Treat this as History, since Opal inflection pr
   # Complete the history
   def stop
     valve = Valve.find(valve_id)
-    log "history.stop, #{valve.name}\n"
+    log "history.stop: #{valve.name}\n"
     update(stop_time: Time.now)
     valve.update(active_history_id: 0)
   end
 
   # Delete entries older than Time.now - PRUNE_INTERVAL
   def self.prune
-    List.where((Time.now - start_time) > PRUNE_INTERVAL).destroy_all
+    lists = List.all.reverse # work from oldest back
+    lists.each do |list|
+      if (Time.now - list.start_time) > PRUNE_INTERVAL
+        list.delete
+      else
+        return # once you get a non-match, quit
+      end
+    end
   end
 
 end

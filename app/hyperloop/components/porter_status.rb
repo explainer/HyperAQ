@@ -9,6 +9,7 @@ class PorterStatus < Hyperloop::Component
       HTTP.get("/porters/1", dataType: "json").then do |response|
         # We don't care about the response, but the Porter.first object is now set up.
         puts "**************"
+        puts "PorterStatus.after_mount method"
         puts response.json[:body]
         puts "**************"
       end

@@ -12,8 +12,8 @@ class MinuteHand < ApplicationRecord
 
     def log(msg)
       f = File.open(LOGFILE, 'a')
-      f.write msg
-      # f.write "#{log_time} #{msg}"
+      # f.write msg
+      f.write "#{log_time} #{msg}"
       f.close
     end
 
@@ -28,7 +28,7 @@ class MinuteHand < ApplicationRecord
       t = Time.now
       reference_time = Time.new(t.year, t.mon, t.mday, t.hour, t.min, 0)
 
-      # log "MinuteHand.find(1).manipulate_and_update, time --> #{reference_time.strftime(LOG_TIME)}\n"
+      log "MinuteHand.find(1).manipulate_and_update, time --> #{reference_time.strftime(LOG_TIME)}\n"
 
       # if key == WaterManager.first.key # do this only if the incoming key matches the master key
 
