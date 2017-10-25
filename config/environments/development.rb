@@ -54,4 +54,17 @@ Rails.application.configure do
   # Use an evented file watcher to asynchronously detect changes in source code,
   # routes, locales, etc. This feature depends on the listen gem.
   config.file_watcher = ActiveSupport::EventedFileUpdateChecker
+
+  # signature: TokyoStore.new(root_dir, max_entries, logger)
+  # root_dir: directory to put the database file in, another TokyoStore needs another directory
+  # max_entries: maximun entries in the database (NOT size in MB)
+  # logger: the logger
+  config.assets.configure do |env|
+    env.cache = Sprockets::Cache::TokyoStore.new(
+      "#{env.root}/tmp/cache/",
+      25000,
+      env.logger
+    )
+    env.check_modified_paths = [Rails.root.join('app','hyperloop'), Rails.root.join('app', 'assets')]
+  end
 end
