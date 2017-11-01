@@ -59,12 +59,12 @@ Rails.application.configure do
   # root_dir: directory to put the database file in, another TokyoStore needs another directory
   # max_entries: maximun entries in the database (NOT size in MB)
   # logger: the logger
-  config.assets.configure do |env|
-    env.cache = Sprockets::Cache::TokyoStore.new(
-      "#{env.root}/tmp/cache/",
-      25000,
-      env.logger
-    )
-    env.check_modified_paths = [Rails.root.join('app','hyperloop'), Rails.root.join('app', 'assets')]
-  end
+  # config.assets.configure do |env|
+  #   env.cache = Sprockets::Cache::TokyoStore.new(
+  #     "#{env.root}/tmp/cache/",
+  #     25000,
+  #     env.logger
+  #   )
+  #   env.check_modified_paths = [Rails.root.join('app','hyperloop'), Rails.root.join('app', 'assets')]
+  # end
 end

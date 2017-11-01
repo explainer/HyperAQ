@@ -5,8 +5,7 @@ class Navbar < Hyperloop::Component
   render(NAV) do
     NAV(class: 'navbar navbar-default') do
       DIV(class: 'container-fluid') do
-        PorterStatus {}
-        WaterStatus {}
+        ControlButtons {}
         TitleNav {}
         ValveButtons {}
       end

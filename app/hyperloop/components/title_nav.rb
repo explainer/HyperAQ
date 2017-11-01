@@ -1,9 +1,10 @@
 class TitleNav < Hyperloop::Component
 
   def render
-    UL(class: 'navbar-header') do
+  
+    UL(class: 'navbar-nav') do
       LI do
-        A(class: 'navbar-brand', href: "#") do
+        A(class: 'navbar-brand') do
           advertisement
         end       
       end

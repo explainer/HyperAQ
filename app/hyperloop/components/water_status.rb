@@ -25,12 +25,10 @@ class WaterStatus < Hyperloop::Component
 
   def render
     title = "System is in #{state} mode"
-    UL(class: 'nav navbar-nav')  do
-      LI do
-        BUTTON(class: "btn #{color} navbar-btn", data: { toggle: "tooltip" }, title: title) do 
-          state
-        end.on(:click) { toggle_state }
-      end
+    LI do
+      BUTTON(class: "btn #{color} navbar-btn", data: { toggle: "tooltip" }, title: title) do 
+        state
+      end.on(:click) { toggle_state }
     end
   end
 

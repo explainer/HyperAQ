@@ -84,7 +84,7 @@ class CrontabService < SchedulingService
     system("crontab #{crontab_file}")
     log "crontab deployed\n"
     # Mark the first Sprinkle NEXT
-    # Sprinkle.first.update(state: NEXT)
+    Sprinkle.first.update(state: NEXT)
   end
 
   def stop
@@ -171,7 +171,7 @@ class WaterManagerServer < Hyperloop::ServerOp
       MinuteHandService.new.start
     end
     # Mark the first Sprinkle NEXT
-    # Sprinkle.first.update(state: NEXT) #test for 500
+    Sprinkle.first.update(state: NEXT)
   end
 
   def disarm
