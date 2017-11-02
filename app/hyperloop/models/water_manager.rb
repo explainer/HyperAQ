@@ -12,5 +12,9 @@ class WaterManager < ApplicationRecord
     [CRONTAB_SPRINKLE_ALL, DAEMON_MINUTE_HAND ][WaterManager.first.scheduling_option]
   end
 
+  def self.singleton
+    WaterManager.first
+  end
+
 
 end 
